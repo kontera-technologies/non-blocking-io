@@ -2,5 +2,5 @@
 
 while :; do
   echo "foo"
-  sleep 1
+  sleep 0.1
 done

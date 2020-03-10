@@ -5,11 +5,14 @@ package non_blocking_io
 import (
 	"errors"
 	"fmt"
-	"io"
-	"syscall"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
 	"golang.org/x/sys/unix"
 )
+
+var ErrBlockingFd = errors.New("file descriptor is set to blocking")
 
 type FD struct {
 	fd uintptr
@@ -37,67 +40,12 @@ func (fd FD) Write(p []byte) (int, error) {
 	return n, err
 }
 
-func NewReader(fd uintptr) (io.Reader, error) {
+func NewFD(fd uintptr) (*FD, error) {
 	flags, err := unix.FcntlInt(fd, unix.F_GETFL, 0)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get fd flags - %w", err)
 	}
 	if err := validateNonBlock(flags); err != nil {
-		return nil, err
-	}
-	if err := validateReadable(flags); err != nil {
-		return nil, err
-	}
-	return &FD{fd: fd}, nil
-}
-
-func NewWriter(fd uintptr) (io.Writer, error) {
-	flags, err := unix.FcntlInt(fd, unix.F_GETFL, 0)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get fd flags - %w", err)
-	}
-	if err := validateNonBlock(flags); err != nil {
-		return nil, err
-	}
-	if err := validateWritable(flags); err != nil {
-		return nil, err
-	}
-	return &FD{fd: fd}, nil
-}
-
-func NewReadWriter(fd uintptr) (io.ReadWriter, error) {
-	flags, err := unix.FcntlInt(fd, unix.F_GETFL, 0)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get fd flags - %w", err)
-	}
-	if err := validateNonBlock(flags); err != nil {
-		return nil, err
-	}
-	if err := validateReadable(flags); err != nil {
-		return nil, err
-	}
-	if err := validateWritable(flags); err != nil {
-		return nil, err
-	}
-
-	return &FD{fd: fd}, nil
-}
-
-func NewReadWriteCloser(fd uintptr) (io.ReadWriteCloser, error) {
-	flags, err := unix.FcntlInt(fd, unix.F_GETFL, 0)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get fd flags - %w", err)
-	}
-	if err := validateNonBlock(flags); err != nil {
-		return nil, err
-	}
-	if err := validateReadable(flags); err != nil {
-		return nil, err
-	}
-	if err := validateWritable(flags); err != nil {
-		return nil, err
-	}
-	if err := validateClosable(flags); err != nil {
 		return nil, err
 	}
 
@@ -105,43 +53,56 @@ func NewReadWriteCloser(fd uintptr) (io.ReadWriteCloser, error) {
 }
 
 func validateNonBlock(flags int) error {
-	if flags & unix.O_NONBLOCK != unix.O_NONBLOCK {
+	if flags&unix.O_NONBLOCK != unix.O_NONBLOCK && flags&unix.O_WRONLY != unix.O_WRONLY {
 		return ErrBlockingFd
 	}
 	return nil
 }
 
-func validateReadable(flags int) error {
-	if flags & unix.O_RDWR != unix.O_RDWR && flags & unix.O_RDONLY != unix.O_RDONLY {
-		return errors.New("file descriptor is not readable")
-	}
-	return nil
-}
-
-func validateWritable(flags int) error {
-	if flags & unix.O_RDWR != unix.O_RDWR && flags & unix.O_WRONLY != unix.O_WRONLY {
-		return errors.New("file descriptor is not writable")
-	}
-	return nil
-}
-
-func validateClosable(flags int) error {
-	if flags & unix.O_CLOEXEC != unix.O_CLOEXEC {
-		return errors.New("file descriptor is not closable")
-	}
-	return nil
-}
-
-func Open(path string, mode int, perm uint32) (io.ReadWriteCloser, error) {
-	fd, err := syscall.Open(path, mode|unix.O_RDWR|unix.O_NONBLOCK, perm)
+func Open(path string, mode int, perm uint32) (*FD, error) {
+	fd, err := unix.Open(path, mode|unix.O_NONBLOCK, perm)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("non_blocking_io.Open(%s,%03b,%d)- %w", path, mode|unix.O_NONBLOCK, perm, err)
 	}
 
-	rwc, err := NewReadWriteCloser(uintptr(fd))
+	rwc, err := NewFD(uintptr(fd))
 	if err != nil {
 		return nil, err
 	}
 
 	return rwc, nil
+}
+
+func UnblockFd(fd uintptr) error {
+	flags, err := unix.FcntlInt(fd, unix.F_GETFL, 0)
+	if err != nil {
+		return fmt.Errorf("cannot get fd flags - %w", err)
+	}
+
+	_, err = unix.FcntlInt(fd, unix.F_SETFL, flags|unix.O_NONBLOCK)
+	if err != nil {
+		return fmt.Errorf("cannot set fd flags - %w", err)
+	}
+
+	return nil
+}
+
+func NewFifo() (*FD, error) {
+	dir, err := ioutil.TempDir("", "fifo")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(dir)
+	path := filepath.Join(dir, "fifo")
+	err = unix.Mkfifo(path, 0600)
+	if err != nil {
+		return nil, err
+	}
+
+	fd, err := unix.Open(path, unix.O_RDWR|unix.O_NONBLOCK, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return &FD{fd: uintptr(fd)}, nil
 }
