@@ -2,7 +2,9 @@ language: go
 go: '1.13'
 env:
   global:
-    - GO111MODULE=on
-script: go test -race -coverprofile=coverage.txt -covermode=atomic ${gobuild_args} ./...
+  - GO111MODULE=on
+  - secure: yzdCXfk20G9wu7SHw0OWoIWd9DrhcTUBkn5ecagzJk/GCTwRgdDRq2HvinlZAvQxSgfVirPITSsGQH4iVcH3gxvexHa6+nfPFL+Tia5qRvYCYN9hgAFf4NdZvcrLfWxar+3GiDxvPN0+ZCUvPI2yr3PGkY4yF64TCp0UsTD3nsOCOQjgZ2eOPtO27Etrarjd4fNd+pthKpzepkrbKceh3vSlB9TEsn4e8PYIaTH1hLDqWsDnnTbT1izKSTxmH9N4iP1bgqTH10os1ZIMRki01OiLUk+0E7iCP/bwSgrXGpYx+ypRrwTvThLu8s2XGzOG8H1qfPa2IwkolhtWplsvQoS1BcqcLLse36OquAYVNnRksLFAfMycigMGhdyC+ZWKyXgPP0nLhhztZHtEbPYOEPE0bC5lI40KAPy0fiG9CJFiXvJPLJp6YNupKG4hLrWDm6p9G2xUcv9pOpdbqcLxttaKpDeiEYHQGJjMZCa49emefRBoMnQn3wmB87lehqQHGkRnQf0240UGgTttieKaxuLdDE/E+JuT956z8D4FlNQOv3RbueqD4ZDn4IawYg0cXSn9ktAUWYdYOd/+/mLYUV7qiL7GlRWOwGJ5SDOWXWm/aYqUfFdCxt+hKyWCAGrx74HD3/s7kggsbOk+RY4tK5pI4NEWhfz5jjFXNYe9AvE=
+script: go test -race -coverprofile=coverage.txt -covermode=atomic ${gobuild_args}
+  ./...
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+- bash <(curl -s https://codecov.io/bash)
