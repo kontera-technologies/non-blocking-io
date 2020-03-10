@@ -9,6 +9,8 @@ import (
 	nbio "github.com/kontera-technologies/non-blocking-io"
 )
 
+// To read from the stdout of a sub-process, use the ``NewFifo`` function and pass the ``FD`` pointer to the ``Stdout``
+// parameter of the command.
 func ExampleNonBlockingStdout() {
 	var err error
 	rw, err := nbio.NewFifo()
