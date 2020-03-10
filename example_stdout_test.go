@@ -11,7 +11,7 @@ import (
 
 // To read from the stdout of a sub-process, use the ``NewFifo`` function and pass the ``FD`` pointer to the ``Stdout``
 // parameter of the command.
-func ExampleExamples_Stdout() {
+func Example_stdout() {
 	var err error
 	rw, err := nbio.NewFifo()
 	if err != nil {
