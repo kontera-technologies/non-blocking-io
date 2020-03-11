@@ -43,22 +43,22 @@ func ExampleNewFifo_stdout() {
 		panic(err)
 	}
 
-	if dur := time.Since(start); dur.Microseconds() > 100 {
+	if dur := time.Since(start); dur.Microseconds() > 500 {
 		panic(fmt.Sprintf("Took %d microseconds to read %d bytes", dur.Microseconds(), n))
 	}
 
-	fmt.Printf("Took less than 100 microseconds to read %d bytes: \"%s\".\n", n, strings.ReplaceAll(string(buf[:n]), "\n", "\\n"))
+	fmt.Printf("Took less than 500 microseconds to read %d bytes: \"%s\".\n", n, strings.ReplaceAll(string(buf[:n]), "\n", "\\n"))
 
 	// Second read will fail because no data is available.
 	buf = make([]byte, 100)
 	start = time.Now()
 	n, err = output.Read(buf)
 
-	if dur := time.Since(start); dur.Microseconds() > 100 {
+	if dur := time.Since(start); dur.Microseconds() > 500 {
 		panic(fmt.Sprintf("Took %d microseconds to read %d bytes", dur.Microseconds(), n))
 	}
 
-	fmt.Printf("Took less than 100 microseconds to read %d bytes.\n", n)
+	fmt.Printf("Took less than 500 microseconds to read %d bytes.\n", n)
 	fmt.Printf("Expected timeout error - %v.\n", err)
 
 	// third read will wait until data is available.
@@ -110,21 +110,21 @@ func ExampleNewFifo_stdin() {
 		panic(err)
 	}
 
-	if dur := time.Since(start); dur.Microseconds() > 100 {
+	if dur := time.Since(start); dur.Microseconds() > 500 {
 		panic(fmt.Sprintf("Took %d microseconds to write %d bytes", dur.Microseconds(), n))
 	}
 
-	fmt.Printf("Took less than 100 microseconds to write %d bytes\n", n)
+	fmt.Printf("Took less than 500 microseconds to write %d bytes\n", n)
 
 	// Second read will fail because no data is available.
 	start = time.Now()
 	n, err = input.Write(data)
 
-	if dur := time.Since(start); dur.Microseconds() > 100 {
+	if dur := time.Since(start); dur.Microseconds() > 500 {
 		panic(fmt.Sprintf("Took %d microseconds to write %d bytes", dur.Microseconds(), n))
 	}
 
-	fmt.Printf("Took less than 100 microseconds to write %d bytes\n", n)
+	fmt.Printf("Took less than 500 microseconds to write %d bytes\n", n)
 	fmt.Printf("Expected timeout error - %v\n", err)
 
 	// Output: Took less than 100 microseconds to write 8192 bytes
