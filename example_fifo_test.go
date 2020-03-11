@@ -21,6 +21,7 @@ func ExampleNewFifo_stdout() {
 	if err != nil {
 		panic(err)
 	}
+	defer output.Close()
 
 	// testdata/endless-foo.sh will output "foo" every 100 milliseconds.
 	cmd := exec.Command("testdata/endless-foo.sh")
@@ -87,6 +88,7 @@ func ExampleNewFifo_stdin() {
 	if err != nil {
 		panic(err)
 	}
+	defer input.Close()
 
 	cmd := exec.Command("testdata/endless-read.sh")
 	cmd.Stdin = input

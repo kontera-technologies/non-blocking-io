@@ -16,6 +16,7 @@ func Example() {
 		log.Println(err)
 		os.Exit(1)
 	}
+	defer fd.Close()
 
 	buf := make([]byte, 8192)
 	n, err := fd.Read(buf)
