@@ -43,8 +43,8 @@ func ExampleNewFifo_stdout() {
 		panic(err)
 	}
 
-	if time.Since(start).Microseconds() > 100 {
-		panic(fmt.Sprintf("Took more than 100 microseconds to read %d bytes.", n))
+	if dur := time.Since(start); dur.Microseconds() > 100 {
+		panic(fmt.Sprintf("Took %d microseconds to read %d bytes", dur.Microseconds(), n))
 	}
 
 	fmt.Printf("Took less than 100 microseconds to read %d bytes: \"%s\".\n", n, strings.ReplaceAll(string(buf[:n]), "\n", "\\n"))
@@ -54,8 +54,8 @@ func ExampleNewFifo_stdout() {
 	start = time.Now()
 	n, err = output.Read(buf)
 
-	if time.Since(start).Microseconds() > 100 {
-		panic(fmt.Sprintf("Took more than 100 microseconds to read %d bytes.", n))
+	if dur := time.Since(start); dur.Microseconds() > 100 {
+		panic(fmt.Sprintf("Took %d microseconds to read %d bytes", dur.Microseconds(), n))
 	}
 
 	fmt.Printf("Took less than 100 microseconds to read %d bytes.\n", n)
@@ -110,8 +110,8 @@ func ExampleNewFifo_stdin() {
 		panic(err)
 	}
 
-	if time.Since(start).Microseconds() > 100 {
-		panic(fmt.Sprintf("Took more than 100 microseconds to write %d bytes", n))
+	if dur := time.Since(start); dur.Microseconds() > 100 {
+		panic(fmt.Sprintf("Took %d microseconds to write %d bytes", dur.Microseconds(), n))
 	}
 
 	fmt.Printf("Took less than 100 microseconds to write %d bytes\n", n)
@@ -120,8 +120,8 @@ func ExampleNewFifo_stdin() {
 	start = time.Now()
 	n, err = input.Write(data)
 
-	if time.Since(start).Microseconds() > 100 {
-		panic(fmt.Sprintf("Took more than 100 microseconds to write %d bytes", n))
+	if dur := time.Since(start); dur.Microseconds() > 100 {
+		panic(fmt.Sprintf("Took %d microseconds to write %d bytes", dur.Microseconds(), n))
 	}
 
 	fmt.Printf("Took less than 100 microseconds to write %d bytes\n", n)
