@@ -63,7 +63,7 @@ func ExampleNewFifo_stdout() {
 	// third read will wait until data is available.
 	buf = make([]byte, 100)
 	start = time.Now()
-	n, err = output.SelectRead(buf, unix.Timeval{Usec: int32((100*time.Millisecond).Microseconds())})
+	n, err = output.SelectRead(buf, unix.Timeval{Usec: 100000}) // 100ms = 100000μs
 	if err != nil {
 		log.Println(err)
 	}
