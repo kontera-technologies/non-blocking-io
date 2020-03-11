@@ -14,15 +14,17 @@ import (
 
 var ErrBlockingFd = errors.New("file descriptor is set to blocking")
 
-type FD struct {
+type Fd struct {
 	fd uintptr
 }
 
-func (fd FD) Close() error {
+// Close closes the file descriptor.
+func (fd Fd) Close() error {
 	return unix.Close(int(fd.fd))
 }
 
-func (fd FD) Read(p []byte) (int, error) {
+// Read is an implementation of ``io.Reader`` that will return an error if the file descriptor is not ready for reading.
+func (fd Fd) Read(p []byte) (int, error) {
 	n, err := unix.Read(int(fd.fd), p)
 	if err != nil && err.(unix.Errno).Timeout() && n < 0 {
 		n = 0
@@ -31,7 +33,8 @@ func (fd FD) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func (fd FD) Write(p []byte) (int, error) {
+// Write is an implementation of ``io.Writer`` that will return an error if the file descriptor is not ready for writing.
+func (fd Fd) Write(p []byte) (int, error) {
 	n, err := unix.Write(int(fd.fd), p)
 	if err != nil && err.(unix.Errno).Timeout() && n < 0 {
 		n = 0
@@ -40,7 +43,34 @@ func (fd FD) Write(p []byte) (int, error) {
 	return n, err
 }
 
-func NewFD(fd uintptr) (*FD, error) {
+// SelectRead is the same as Read, but blocks for ``timeout`` until the file descriptor is ready for reading.
+func (fd Fd) SelectRead(p []byte, timeout unix.Timeval) (int, error) {
+	fdSet := unix.FdSet{}
+	fdSet.Set(int(fd.fd))
+	_, err := unix.Select(1, &fdSet, &unix.FdSet{}, &unix.FdSet{}, &timeout)
+	if err != nil {
+		return 0, err
+	}
+
+	return fd.Read(p)
+}
+
+// SelectWrite is the same as Write, but blocks for ``timeout`` until the file descriptor is ready for writing.
+func (fd Fd) SelectWrite(p []byte, timeout unix.Timeval) (int, error) {
+	fdSet := unix.FdSet{}
+	fdSet.Set(int(fd.fd))
+	_, err := unix.Select(1, &unix.FdSet{}, &fdSet, &unix.FdSet{}, &timeout)
+	if err != nil {
+		return 0, err
+	}
+
+	return fd.Write(p)
+}
+
+// NewFd creates a new file struct.
+// Will return an error if the file descriptor is not valid, or if it is blocking.
+// Use ``UnblockFd`` to transform a blocking file descriptor into non-blocking.
+func NewFd(fd uintptr) (*Fd, error) {
 	flags, err := unix.FcntlInt(fd, unix.F_GETFL, 0)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get fd flags - %w", err)
@@ -49,7 +79,7 @@ func NewFD(fd uintptr) (*FD, error) {
 		return nil, err
 	}
 
-	return &FD{fd: fd}, nil
+	return &Fd{fd: fd}, nil
 }
 
 func validateNonBlock(flags int) error {
@@ -59,13 +89,14 @@ func validateNonBlock(flags int) error {
 	return nil
 }
 
-func Open(path string, mode int, perm uint32) (*FD, error) {
+// Open opens the file descriptor of a path as non-blocking and returns a new ``Fd`` struct from it.
+func Open(path string, mode int, perm uint32) (*Fd, error) {
 	fd, err := unix.Open(path, mode|unix.O_NONBLOCK, perm)
 	if err != nil {
-		return nil, fmt.Errorf("non_blocking_io.Open(%s,%03b,%d)- %w", path, mode|unix.O_NONBLOCK, perm, err)
+		return nil, err
 	}
 
-	rwc, err := NewFD(uintptr(fd))
+	rwc, err := NewFd(uintptr(fd))
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +104,7 @@ func Open(path string, mode int, perm uint32) (*FD, error) {
 	return rwc, nil
 }
 
+// UnblockFd transforms a blocking file descriptor to non-blocking.
 func UnblockFd(fd uintptr) error {
 	flags, err := unix.FcntlInt(fd, unix.F_GETFL, 0)
 	if err != nil {
@@ -87,7 +119,9 @@ func UnblockFd(fd uintptr) error {
 	return nil
 }
 
-func NewFifo() (*FD, error) {
+// NewFifo uses the ``mkfifo`` unix command to creates a pipe-like file descriptor.
+// Use it to pipe the stdin / stdout / stderr of a process to a non-blocking ``Fd`` struct.
+func NewFifo() (*Fd, error) {
 	dir, err := ioutil.TempDir("", "fifo")
 	if err != nil {
 		return nil, err
@@ -104,5 +138,5 @@ func NewFifo() (*FD, error) {
 		return nil, err
 	}
 
-	return &FD{fd: uintptr(fd)}, nil
+	return &Fd{fd: uintptr(fd)}, nil
 }

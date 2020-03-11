@@ -30,12 +30,12 @@ func deadlineFn(t testing.TB, dur time.Duration, fn func(c chan bool)) {
 
 func TestNewFD(t *testing.T) {
 	var err error
-	_, err = nbio.NewFD(999)
+	_, err = nbio.NewFd(999)
 	if err == nil || !errors.Is(err, unix.EBADF) {
 		t.Errorf(`Expected: "%s", received: "%s"`, unix.EBADF, err)
 	}
 
-	_, err = nbio.NewFD(os.Stdin.Fd())
+	_, err = nbio.NewFd(os.Stdin.Fd())
 	if err == nil || !errors.Is(err, nbio.ErrBlockingFd) {
 		t.Errorf(`Expected: "%s", received: "%s"`, nbio.ErrBlockingFd, err)
 	}
@@ -48,7 +48,7 @@ func TestUnblockFd(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = nbio.NewFD(os.Stdin.Fd())
+	_, err = nbio.NewFd(os.Stdin.Fd())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +139,7 @@ func TestFD_Read(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r, err := nbio.NewFD(uintptr(fd))
+	r, err := nbio.NewFd(uintptr(fd))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +181,7 @@ func TestNewFifo(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmd := exec.Command("testdata/foo.sh")
+	cmd := exec.Command("testdata/endless-foo.sh")
 	cmd.Stdout = rw
 	err = cmd.Start()
 	if err != nil {
@@ -316,7 +316,7 @@ func _TestFile_Read(t *testing.T) {
 func _Test_StdoutPipe(t *testing.T) {
 	var err error
 
-	cmd := exec.Command("testdata/foo.sh")
+	cmd := exec.Command("testdata/endless-foo.sh")
 	r, err := cmd.StdoutPipe()
 	err = cmd.Start()
 	if err != nil {
