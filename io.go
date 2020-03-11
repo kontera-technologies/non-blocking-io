@@ -12,10 +12,12 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+var emptyFdSet = unix.FdSet{}
 var ErrBlockingFd = errors.New("file descriptor is set to blocking")
 
 type Fd struct {
-	fd uintptr
+	fd  uintptr
+	set unix.FdSet
 }
 
 // Close closes the file descriptor.
@@ -45,9 +47,7 @@ func (fd Fd) Write(p []byte) (int, error) {
 
 // SelectRead is the same as Read, but blocks for ``timeout`` until the file descriptor is ready for reading.
 func (fd Fd) SelectRead(p []byte, timeout unix.Timeval) (int, error) {
-	fdSet := unix.FdSet{}
-	fdSet.Set(int(fd.fd))
-	_, err := unix.Select(1, &fdSet, &unix.FdSet{}, &unix.FdSet{}, &timeout)
+	_, err := unix.Select(1, &fd.set, &emptyFdSet, &emptyFdSet, &timeout)
 	if err != nil {
 		return 0, err
 	}
@@ -57,9 +57,7 @@ func (fd Fd) SelectRead(p []byte, timeout unix.Timeval) (int, error) {
 
 // SelectWrite is the same as Write, but blocks for ``timeout`` until the file descriptor is ready for writing.
 func (fd Fd) SelectWrite(p []byte, timeout unix.Timeval) (int, error) {
-	fdSet := unix.FdSet{}
-	fdSet.Set(int(fd.fd))
-	_, err := unix.Select(1, &unix.FdSet{}, &fdSet, &unix.FdSet{}, &timeout)
+	_, err := unix.Select(1, &emptyFdSet, &fd.set, &emptyFdSet, &timeout)
 	if err != nil {
 		return 0, err
 	}
@@ -79,7 +77,9 @@ func NewFd(fd uintptr) (*Fd, error) {
 		return nil, err
 	}
 
-	return &Fd{fd: fd}, nil
+	fdSet := unix.FdSet{}
+	fdSet.Set(int(fd))
+	return &Fd{fd: fd, set: fdSet}, nil
 }
 
 func validateNonBlock(flags int) error {

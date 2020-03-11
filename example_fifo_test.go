@@ -3,9 +3,12 @@ package non_blocking_io_test
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os/exec"
 	"strings"
 	"time"
+
+	"golang.org/x/sys/unix"
 
 	nbio "github.com/kontera-technologies/non-blocking-io"
 )
@@ -31,35 +34,49 @@ func ExampleNewFifo_stdout() {
 	// Wait for a few milliseconds to give the process time to start, to make sure first read will succeed.
 	time.Sleep(time.Millisecond * 100)
 
-	start := time.Now()
 	buf := make([]byte, 100)
+	start := time.Now()
 	n, err := output.Read(buf)
 
 	if err != nil {
 		panic(err)
 	}
 
-	if time.Now().Sub(start).Microseconds() > 100 {
-		panic(fmt.Sprintf("Took more than 100 microseconds to read %d bytes", n))
+	if time.Since(start).Microseconds() > 100 {
+		panic(fmt.Sprintf("Took more than 100 microseconds to read %d bytes.", n))
 	}
 
-	fmt.Printf("Took less than 100 microseconds to read %d bytes: \"%s\"\n", n, strings.ReplaceAll(string(buf[:n]), "\n", "\\n"))
+	fmt.Printf("Took less than 100 microseconds to read %d bytes: \"%s\".\n", n, strings.ReplaceAll(string(buf[:n]), "\n", "\\n"))
 
 	// Second read will fail because no data is available.
-	start = time.Now()
 	buf = make([]byte, 100)
+	start = time.Now()
 	n, err = output.Read(buf)
 
-	if time.Now().Sub(start).Microseconds() > 100 {
-		panic(fmt.Sprintf("Took more than 100 microseconds to read %d bytes", n))
+	if time.Since(start).Microseconds() > 100 {
+		panic(fmt.Sprintf("Took more than 100 microseconds to read %d bytes.", n))
 	}
 
-	fmt.Printf("Took less than 100 microseconds to read %d bytes\n", n)
-	fmt.Printf("Expected timeout error - %v\n", err)
+	fmt.Printf("Took less than 100 microseconds to read %d bytes.\n", n)
+	fmt.Printf("Expected timeout error - %v.\n", err)
 
-	// Output: Took less than 100 microseconds to read 4 bytes: "foo\n"
-	// Took less than 100 microseconds to read 0 bytes
-	// Expected timeout error - resource temporarily unavailable
+	// third read will wait until data is available.
+	buf = make([]byte, 100)
+	start = time.Now()
+	n, err = output.SelectRead(buf, unix.Timeval{Usec: int32((100*time.Millisecond).Microseconds())})
+	if err != nil {
+		log.Println(err)
+	}
+	if dur := time.Since(start); !(dur.Milliseconds() < 110 && dur.Milliseconds() > 90) {
+		panic(fmt.Sprintf("Took %s milliseconds to read %d bytes.", dur, n))
+	}
+
+	fmt.Printf("Took about 100 milliseconds to read %d bytes: \"%s\".\n", n, strings.ReplaceAll(string(buf[:n]), "\n", "\\n"))
+
+	// Output: Took less than 100 microseconds to read 4 bytes: "foo\n".
+	// Took less than 100 microseconds to read 0 bytes.
+	// Expected timeout error - resource temporarily unavailable.
+	// Took about 100 milliseconds to read 4 bytes: "foo\n".
 }
 
 // To write to the stdout of a sub-process, use the ``NewFifo`` function and pass the ``Fd`` pointer to the ``Stdin``
@@ -91,7 +108,7 @@ func ExampleNewFifo_stdin() {
 		panic(err)
 	}
 
-	if time.Now().Sub(start).Microseconds() > 100 {
+	if time.Since(start).Microseconds() > 100 {
 		panic(fmt.Sprintf("Took more than 100 microseconds to write %d bytes", n))
 	}
 
@@ -101,7 +118,7 @@ func ExampleNewFifo_stdin() {
 	start = time.Now()
 	n, err = input.Write(data)
 
-	if time.Now().Sub(start).Microseconds() > 100 {
+	if time.Since(start).Microseconds() > 100 {
 		panic(fmt.Sprintf("Took more than 100 microseconds to write %d bytes", n))
 	}
 
