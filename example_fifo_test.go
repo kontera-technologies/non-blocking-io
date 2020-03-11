@@ -113,8 +113,11 @@ func ExampleNewFifo_stdin() {
 	if dur := time.Since(start); dur.Microseconds() > 500 {
 		panic(fmt.Sprintf("Took %d microseconds to write %d bytes", dur.Microseconds(), n))
 	}
+	if n >= len(data) {
+		panic(fmt.Sprintf("Took less than 500 microseconds to write %d bytes", n))
+	}
 
-	fmt.Printf("Took less than 500 microseconds to write %d bytes\n", n)
+	fmt.Printf("Took less than 500 microseconds to write less than %d bytes\n", len(data))
 
 	// Second read will fail because no data is available.
 	start = time.Now()
@@ -123,11 +126,14 @@ func ExampleNewFifo_stdin() {
 	if dur := time.Since(start); dur.Microseconds() > 500 {
 		panic(fmt.Sprintf("Took %d microseconds to write %d bytes", dur.Microseconds(), n))
 	}
+	if n > 0 {
+		panic(fmt.Sprintf("Took less than 500 microseconds to write %d bytes", n))
+	}
 
-	fmt.Printf("Took less than 500 microseconds to write %d bytes\n", n)
+	fmt.Printf("Took less than 500 microseconds to write 0 bytes\n")
 	fmt.Printf("Expected timeout error - %v\n", err)
 
-	// Output: Took less than 500 microseconds to write 8192 bytes
+	// Output: Took less than 500 microseconds to write less than 300001 bytes
 	// Took less than 500 microseconds to write 0 bytes
 	// Expected timeout error - resource temporarily unavailable
 }
