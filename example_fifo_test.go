@@ -74,8 +74,8 @@ func ExampleNewFifo_stdout() {
 
 	fmt.Printf("Took about 100 milliseconds to read %d bytes: \"%s\".\n", n, strings.ReplaceAll(string(buf[:n]), "\n", "\\n"))
 
-	// Output: Took less than 100 microseconds to read 4 bytes: "foo\n".
-	// Took less than 100 microseconds to read 0 bytes.
+	// Output: Took less than 500 microseconds to read 4 bytes: "foo\n".
+	// Took less than 500 microseconds to read 0 bytes.
 	// Expected timeout error - resource temporarily unavailable.
 	// Took about 100 milliseconds to read 4 bytes: "foo\n".
 }
@@ -127,7 +127,7 @@ func ExampleNewFifo_stdin() {
 	fmt.Printf("Took less than 500 microseconds to write %d bytes\n", n)
 	fmt.Printf("Expected timeout error - %v\n", err)
 
-	// Output: Took less than 100 microseconds to write 8192 bytes
-	// Took less than 100 microseconds to write 0 bytes
+	// Output: Took less than 500 microseconds to write 8192 bytes
+	// Took less than 500 microseconds to write 0 bytes
 	// Expected timeout error - resource temporarily unavailable
 }
